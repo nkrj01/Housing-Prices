@@ -1,6 +1,5 @@
 import pandas as pd
-from functions import Functions
-from preprocesor import Preprocessor
+from preprocesor import Preprocessor, CyclicEncoder
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.ensemble import RandomForestRegressor
 from matplotlib import pyplot as plt
@@ -11,6 +10,12 @@ from xgboost import XGBRegressor
 from plotting_functions import Plot
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 from functions import Functions
+from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import OrdinalEncoder
+from sklearn.decomposition import PCA
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import MinMaxScaler
 
 
 def dataTypeChange(X):
@@ -96,7 +101,7 @@ X = medianImputation(X, "LotFrontage")
 
 
 # train and test data when fitting on partial data
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=44)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=1)
 y_train = y_train.reset_index(drop=True)
 y_test = y_test.reset_index(drop=True)
 
@@ -117,9 +122,28 @@ categoricalVariables, numericalVariables, cyclicVariables, NAColumns = objFuncti
 X_train = dataTypeChange(X_train)
 X_test = dataTypeChange(X_test)
 
+# Defining imputer, encoder, and pca for all three variable types.
+categoricalImputer = SimpleImputer(strategy='constant', fill_value="Missing")
+categories = [categoricalVariables[key] for key in categoricalVariables.keys()]
+OrdinalEncoder = OrdinalEncoder(encoded_missing_value=-1, handle_unknown="use_encoded_value", unknown_value=-1)
+OneHotEncoder = OneHotEncoder(categories=categories, handle_unknown="ignore", sparse=False)
+pca_ct = PCA(n_components=10)
+
+numericalImputer = SimpleImputer(strategy='constant', fill_value=-1)
+numericalEncoder = MinMaxScaler()
+pca_nm = PCA(n_components=10)
+
+cyclicImputer = SimpleImputer(strategy='constant', fill_value=-1)
+cyclicEncoder = CyclicEncoder()
+pca_cy = PCA(n_components=10)
+
 # Preprocess Data. Imputation, scaling, One-hot-encoding, ordinal encoding, PCA.
 # See preprocessor class for more info.
-processor = Preprocessor.processor(numericalVariables, categoricalVariables, cyclicVariables)
+processor = Preprocessor.processor(numericalVariables, categoricalVariables, cyclicVariables,
+                                   categoricalImputer, OrdinalEncoder, False,
+                                   numericalImputer, numericalEncoder, False,
+                                   cyclicImputer, cyclicEncoder, False)
+
 processor.fit(X_train)
 X_train_trans = processor.transform(X_train)
 df_train_trans = pd.DataFrame(X_train_trans, columns=processor.get_feature_names_out())

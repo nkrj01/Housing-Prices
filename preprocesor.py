@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import OneHotEncoder
-from sklearn.preprocessing import MinMaxScaler
+
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.base import TransformerMixin
@@ -40,41 +40,34 @@ class Preprocessor:
     @staticmethod
     def processor(
             numericalVariables, categoricalVariables, cyclicVariables,
-            pca_on={"NV": False, "CV": False, "CyV": False}, pca_n=20):
+            ctImputer, ctEncoder, pca_ct,
+            nmImputer, nmEncoder, pca_nm,
+            cyImputer, cyEncoder, pca_cy):
 
-        categoricalImputer = SimpleImputer(strategy='constant', fill_value="Missing")
-        categories = [categoricalVariables[key] for key in categoricalVariables.keys()]
-        OE = OrdinalEncoder(encoded_missing_value=-1, handle_unknown="use_encoded_value", unknown_value=-1)
-        OHE = OneHotEncoder(categories=categories, handle_unknown="ignore", sparse=False)
-        pca = PCA(n_components=pca_on)
-        if pca_on["NV"]:
-            categoricalImputerTransformer = Pipeline([('imputer', categoricalImputer),
-                                                      ('OHE', OE),
-                                                      ('pca', pca)])
+        if pca_ct:
+            categoricalImputerTransformer = Pipeline([('imputer', ctImputer),
+                                                      ('enc', ctEncoder),
+                                                      ('pca', pca_ct)])
         else:
-            categoricalImputerTransformer = Pipeline([('imputer', categoricalImputer),
-                                                      ('OHE', OE)])
+            categoricalImputerTransformer = Pipeline([('imputer', ctImputer),
+                                                      ('enc', ctEncoder)])
 
         # Defines a pipeline for imputation and encoding for Continuous variables
-        if pca_on["CV"]:
-            numericalImputer = SimpleImputer(strategy='constant', fill_value=-1)
-            numericalImputerTransformer = Pipeline([('imputer', numericalImputer),
-                                                    ("MMS", StandardScaler()),
-                                                    ('pca', pca)])
+        if pca_nm:
+            numericalImputerTransformer = Pipeline([('imputer', nmImputer),
+                                                    ("MMS", nmEncoder),
+                                                    ('pca', pca_nm)])
         else:
-            numericalImputer = SimpleImputer(strategy='constant', fill_value=-1)
-            numericalImputerTransformer = Pipeline([('imputer', numericalImputer),
-                                                    ("MMS", StandardScaler())])
+            numericalImputerTransformer = Pipeline([('imputer', nmImputer),
+                                                    ("MMS", nmEncoder)])
 
-        if pca_on["CyV"]:
-            cyclicImputer = SimpleImputer(strategy='constant', fill_value=-1)
-            cyclicImputerTransformer = Pipeline([('imputer', cyclicImputer),
-                                                 ("enc", CyclicEncoder()),
-                                                 ('pca', pca)])
+        if pca_cy:
+            cyclicImputerTransformer = Pipeline([('imputer', cyImputer),
+                                                 ("enc", cyEncoder),
+                                                 ('pca', pca_cy)])
         else:
-            cyclicImputer = SimpleImputer(strategy='constant', fill_value=-1)
-            cyclicImputerTransformer = Pipeline([('imputer', cyclicImputer),
-                                                 ("enc", CyclicEncoder())])
+            cyclicImputerTransformer = Pipeline([('imputer', cyImputer),
+                                                 ("enc", cyEncoder)])
 
         # Column transformer for numerical and categorical imputation
         ct = ColumnTransformer([
