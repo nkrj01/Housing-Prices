@@ -36,84 +36,8 @@ def dataTypeChange(X):
     return X
 
 
-def medianImputation(X, colName):
-    """
-    :param X: Dataframe
-    :param colName: String, Name of the column for imputation
-    :return: Dataframe, with column imputation
-    """
-
-    Median = X[X[colName].notna()][colName].median()
-    X[colName] = X[colName].fillna(Median)
-    return X
-
-
-def clipping(X, colName, cutoff):
-    """
-    :param X: Dataframe
-    :param colName: String, name of the column that is basis for clipping df
-    :param cutoff: cut-off value for clipping
-    :return: Dataframe, shortened df after clipping
-    """
-    X = X[X[colName] < cutoff]
-    return X
-
-
-def VIF(X, colNameList):
-    """
-
-    :param X: Dataframe
-    :param colNameList: list["string"], list of column for VIF calculation
-    :return: Dataframe, VIF of input columns
-    """
-
-    vif_data = pd.DataFrame()
-    vif_data["Variable"] = X[colNameList].columns
-    vif_data["VIF"] = [variance_inflation_factor(X[colNameList].values, i) for i in range(X[colNameList].shape[1])]
-    return vif_data
-
-
-def submitFile(y_predict):
-
-    """
-    :param y_predict: Array
-    :return: csv file
-
-    This functions save a csv file of two columns "id" and "y_predict" for submission to Kaggle.
-
-    """
-    idx = np.array(range(1461, 2920, 1))
-    array = np.vstack((idx, y_predict)).T
-    df_submit = pd.DataFrame(array, columns=["id", "SalePrice"])
-    df_submit["id"] = df_submit["id"].astype("int64")
-    df_submit.to_csv("submission.csv", index=False)
-
-
-def regressorImputer(X, feature1, feature2):
-
-    """
-    :param X: DataFrame
-    :return: DataFrame, with column imputed based on regression model
-
-    This function first fits feature2 with feature 2 using non-nan values,
-    This uses feature2 to predict nan values of feature1
-    """
-
-    df = X[[feature2, feature1]]
-    im_X_test = df[df[feature1].isna()]
-    im_X_test = im_X_test[feature2]
-    df = df.dropna(subset=feature1)
-    im_X = df[feature2].to_numpy().reshape(-1, 1)
-    im_Y = df[feature1].to_numpy().reshape(-1, 1)
-    reg = XGBRegressor(eval_metric="mlogloss", n_estimators=50, learning_rate=0.1, max_depth=2).fit(im_X, im_Y)
-    im_y_pred = reg.predict(im_X_test.to_numpy().reshape(-1, 1))
-    bool = X[feature1].isna()
-    X.loc[bool, feature1] = im_y_pred
-    return X
-
-
+# import data and define X and y variable
 trainData = pd.read_csv(r"C:\Users\14702\PycharmProjects\pythonProject2\Kaggel_housing prices\train.csv")
-
 y = trainData["SalePrice"]
 X = trainData.drop(["SalePrice", "Id"], axis=1)
 
